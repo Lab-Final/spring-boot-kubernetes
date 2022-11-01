@@ -57,8 +57,8 @@ stages:
     - task: dependency-check-build-task@6
       inputs:
         projectName: 'spring-boot-kubernetes'
-        scanPath: '$(Build.SourcesDirectory)/target'
-        format: 'HTML, CSV'
+        scanPath: '$(Build.SourcesDirectory)'
+        format: 'HTML'
         failOnCVSS: '7.0'
         reportsDirectory: '$(Build.SourcesDirectory)/reportes'
 
