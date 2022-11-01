@@ -1,81 +1,101 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
-trigger:
-- master
-
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- task: Maven@4
-  inputs:
-    mavenPomFile: 'pom.xml'
-    publishJUnitResults: true
-    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    javaHomeOption: 'JDKVersion'
-    mavenVersionOption: 'Default'
-    mavenAuthenticateFeed: false
-    effectivePomSkip: false
-    sonarQubeRunAnalysis: false
+stages: 
+- stage: SAST
+  jobs:
+  - job: build
+    displayName: 'Build'
 
-- task: SonarCloudPrepare@1
-  inputs:
-    SonarCloud: 'sonarCloud'
-    organization: 'lab-final'
-    projectKey: 'Lab-Final_spring-boot-kubernetes'
-    projectName: 'spring-boot-kubernetes'
-  
-- task: Maven@4
-  inputs:
-    mavenPomFile: 'pom.xml'
-    publishJUnitResults: true
-    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    javaHomeOption: 'JDKVersion'
-    mavenVersionOption: 'Default'
-    mavenAuthenticateFeed: false
-    effectivePomSkip: false
-    sonarQubeRunAnalysis: true
-    sqMavenPluginVersionChoice: 'latest'
+    steps:
+    - task: Maven@4
+      inputs:
+        mavenPomFile: 'pom.xml'
+        publishJUnitResults: true
+        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        javaHomeOption: 'JDKVersion'
+        mavenVersionOption: 'Default'
+        mavenAuthenticateFeed: false
+        effectivePomSkip: false
+        sonarQubeRunAnalysis: false
 
-- task: SonarCloudPublish@1
-  inputs:
-    pollingTimeoutSec: '300'
+    - task: SonarCloudPrepare@1
+      inputs:
+        SonarCloud: 'sonarCloud'
+        organization: 'lab-final'
+        projectKey: 'Lab-Final_spring-boot-kubernetes'
+        projectName: 'spring-boot-kubernetes'
+      displayName: 'Preparacion Analisis SAST'
+      
+    - task: Maven@4
+      inputs:
+        mavenPomFile: 'pom.xml'
+        publishJUnitResults: true
+        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        javaHomeOption: 'JDKVersion'
+        mavenVersionOption: 'Default'
+        mavenAuthenticateFeed: false
+        effectivePomSkip: false
+        sonarQubeRunAnalysis: true
+        sqMavenPluginVersionChoice: 'latest'
+      displayName: 'Analisis SAST'
 
-- task: sonarcloud-buildbreaker@2
-  inputs:
-    SonarCloud: 'sonarCloud'
-    organization: 'lab-final'
-  
-- task: DockerInstaller@0
-  inputs:
-    dockerVersion: '17.09.0-ce'
+    - task: SonarCloudPublish@1
+      inputs:
+        pollingTimeoutSec: '300'
+
+    - task: sonarcloud-buildbreaker@2
+      inputs:
+        SonarCloud: 'sonarCloud'
+        organization: 'lab-final'
+
+- stage: SCA
+  jobs:
+  - job: SCA
+    displayName: 'SCA'
+    steps:
+    - task: dependency-check-build-task@6
+      inputs:
+        projectName: 'spring-boot-kubernetes'
+        scanPath: '$(Build.SourcesDirectory)/target'
+        format: 'HTML, CSV'
+        failOnCVSS: '7.0'
+        reportsDirectory: '$(Build.SourcesDirectory)/reportes'
+
+- stage: Docker
+  jobs:
+  - job: Install-docker
+    steps:
+    - task: DockerInstaller@0
+      inputs:
+        dockerVersion: '17.09.0-ce'
+      displayName: 'instalacion docker'
     
-- task: Docker@2
-  inputs:
-    containerRegistry: 'Docker-lab'
-    command: 'login'
-    
-- task: Docker@2
-  inputs:
-    containerRegistry: 'Docker-lab'
-    repository: 'lytch000/spring-boot-kubernetes'
-    command: 'build'
-    Dockerfile: '**/Dockerfile'
-    tags: 'latest'
-    
-- script: |
-        sudo apt-get install -y rpm
-        wget https://github.com/aquasecurity/trivy/releases/download/v0.27.1/trivy_0.27.1_Linux-64bit.deb
-        sudo dpkg -i trivy_0.27.1_Linux-64bit.deb
-        trivy image lytch000/spring-boot-kubernetes:latest
-  displayName: Image Scan
-- task: Docker@2
-  inputs:
-    containerRegistry: 'Docker-lab'
-    repository: 'lytch000/spring-boot-kubernetes'
-    command: 'push'
-    tags: 'latest'
-  displayName: Docker Push
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'Docker-lab'
+        command: 'login'
+      displayName: 'Login Docker'
+        
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'Docker-lab'
+        repository: 'lytch000/spring-boot-kubernetes'
+        command: 'build'
+        Dockerfile: '**/Dockerfile'
+        tags: 'latest'
+      displayName: 'Build con docker'
+        
+    - script: |
+            sudo apt-get install -y rpm
+            wget https://github.com/aquasecurity/trivy/releases/download/v0.27.1/trivy_0.27.1_Linux-64bit.deb
+            sudo dpkg -i trivy_0.27.1_Linux-64bit.deb
+            trivy image lytch000/spring-boot-kubernetes:latest
+      displayName: 'Analisis Imagen Docker'
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'Docker-lab'
+        repository: 'lytch000/spring-boot-kubernetes'
+        command: 'push'
+        tags: 'latest'
+      displayName: 'Docker Push'
