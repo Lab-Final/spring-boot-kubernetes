@@ -53,7 +53,7 @@ steps:
   inputs:
     projectName: 'spring-boot-kubernetes'
     scanPath: '$(Build.SourcesDirectory)/target'
-    format: 'HTML'
+    format: 'HTML,CSV'
     reportsDirectory: '$(Build.SourcesDirectory)/reportes'
   
 - script: |
@@ -64,3 +64,4 @@ steps:
         echo "Quiebre por incumplimiento de QG" $nhigh " > 0 HIGH Vulnerabilities"
       exit 1;
     fi;
+    
