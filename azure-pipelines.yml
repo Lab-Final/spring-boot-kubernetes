@@ -48,3 +48,19 @@ steps:
   inputs:
     SonarCloud: 'sonarCloud'
     organization: 'lab-final'
+
+- task: dependency-check-build-task@6
+  inputs:
+    projectName: 'spring-boot-kubernetes'
+    scanPath: '$(Build.SourcesDirectory)/target'
+    format: 'HTML'
+    reportsDirectory: '$(Build.SourcesDirectory)/reportes'
+  
+- script: |
+    nhigh=$(grep ",HIGH," $(Build.SourcesDirectory)/reportes/dependency-check-report.csv | wc -l)
+    echo $nhigh "Deteccion de vulnerabilidades"
+    if [ $nhigh -gt 0 ];
+      then 
+        echo "Quiebre por incumplimiento de QG" $nhigh " > 0 HIGH Vulnerabilities"
+      exit 1;
+    fi;
