@@ -64,8 +64,7 @@ steps:
     repository: 'lytch000/spring-boot-kubernetes'
     command: 'build'
     Dockerfile: '**/Dockerfile'
-    tags: 'lastest'
-
+    tags: 'latest'
 - task: Docker@2
   inputs:
     containerRegistry: 'Docker-lab'
