@@ -64,7 +64,7 @@ stages:
 
 - stage: Docker
   jobs:
-  - job: Install-docker
+  - job:
     steps:
     - task: DockerInstaller@0
       inputs:
