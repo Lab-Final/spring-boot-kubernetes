@@ -10,66 +10,6 @@ pool:
   vmImage: ubuntu-latest
 
 stages:
-- stage: SAST
-  jobs:
-  - job: SAST
-    steps:
-    - task: Maven@4
-      inputs:
-        mavenPomFile: 'pom.xml'
-        publishJUnitResults: true
-        testResultsFiles: '**/surefire-reports/TEST-*.xml'
-        javaHomeOption: 'JDKVersion'
-        mavenVersionOption: 'Default'
-        mavenAuthenticateFeed: false
-        effectivePomSkip: false
-        sonarQubeRunAnalysis: false
-      displayName: 'Build'
-
-    - task: SonarCloudPrepare@1
-      inputs:
-        SonarCloud: 'sonarCloud'
-        organization: 'lab-final'
-        projectKey: 'Lab-Final_spring-boot-kubernetes'
-        projectName: 'spring-boot-kubernetes'
-      displayName: 'Preparacion Analisis SAST'
-      
-    - task: Maven@4
-      inputs:
-        mavenPomFile: 'pom.xml'
-        publishJUnitResults: true
-        testResultsFiles: '**/surefire-reports/TEST-*.xml'
-        javaHomeOption: 'JDKVersion'
-        mavenVersionOption: 'Default'
-        mavenAuthenticateFeed: false
-        effectivePomSkip: false
-        sonarQubeRunAnalysis: true
-        sqMavenPluginVersionChoice: 'latest'
-      displayName: Analsis SAST
-
-    - task: SonarCloudPublish@1
-      inputs:
-        pollingTimeoutSec: '300'
-      displayName: Publicacion resultado
-
-    - task: sonarcloud-buildbreaker@2
-      inputs:
-        SonarCloud: 'sonarCloud'
-        organization: 'lab-final'
-      displayName: Break por QG
-
-- stage: SCA
-  jobs:
-  - job:
-    steps:
-    - task: dependency-check-build-task@6
-      inputs:
-        projectName: 'spring-boot-kubernetes'
-        format: 'HTML, CSV'
-        failOnCVSS: '7.0'
-        reportsDirectory: '$(Build.SourcesDirectory)/ReportesSca'
-      displayName: Analisis SCA 
-
 - stage: ContainerSecurity 
   jobs:
   - job: Container_Security
@@ -107,6 +47,11 @@ stages:
             sudo dpkg -i trivy_0.27.1_Linux-64bit.deb
             trivy image -s "HIGH" --exit-code 1 lytch000/spring-boot-kubernetes:latest
             echo "Se encontraron vulnerabilidades del tipo HIGH"
+            if [ trivy image -s "HIGH" lytch000/spring-boot-kubernetes:latest ];
+            then 
+              echo "Se encontraron vulnerabilidades del tipo HIGH"
+              exit 1;
+            fi;
       displayName: Image Scan
     - task: Docker@2
       inputs:
