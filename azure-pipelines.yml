@@ -58,24 +58,4 @@ stages:
         organization: 'lab-final'
       displayName: Break por QG
 
-- stage: SCA
-  jobs:
-  - job:
-    steps:
-    - task: dependency-check-build-task@6
-      inputs:
-        projectName: 'spring-boot-kubernetes'
-        format: 'HTML, CSV'
-        failOnCVSS: '7.0'
-        reportsDirectory: '$(Build.SourcesDirectory)/ReportesSca'
-    
-    - script: |
-        numeroAltas=$(grep ",HIGH," $(Build.SourcesDirectory)/dependency/dependency-check-report.csv | wc -l)
-        echo $numeroAltas "Vulnerabilidades encontradas"
-        if [ $numeroAltas -gt 0 ];
-        then 
-          echo "Se quiebra el pipeline por vulnerabilidades altas"
-          exit 1;
-        fi;
-      displayName: Analisis SCA 
 
