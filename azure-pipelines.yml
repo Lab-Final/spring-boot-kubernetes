@@ -105,7 +105,10 @@ stages:
             sudo apt-get install -y rpm
             wget https://github.com/aquasecurity/trivy/releases/download/v0.27.1/trivy_0.27.1_Linux-64bit.deb
             sudo dpkg -i trivy_0.27.1_Linux-64bit.deb
-            trivy image -s "HIGH" --exit-code 1 lytch000/spring-boot-kubernetes:latest
+            if trivy image -s "HIGH" lytch000/spring-boot-kubernetes:latest
+              --exit-code 1 
+              echo "Se encontraron vulnerabilidades del tipo HIGH"
+            fi;
       displayName: Image Scan
     - task: Docker@2
       inputs:
