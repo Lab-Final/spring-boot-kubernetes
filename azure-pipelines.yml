@@ -12,7 +12,7 @@ pool:
 stages:
 - stage: SAST
   jobs:
-  - job: 
+  - job: SAST
     steps:
     - task: Maven@4
       inputs:
@@ -57,6 +57,18 @@ stages:
         SonarCloud: 'sonarCloud'
         organization: 'lab-final'
       displayName: Break por QG
+
+- stage: SCA
+  jobs:
+  - job:
+    steps:
+    - task: dependency-check-build-task@6
+      inputs:
+        projectName: 'spring-boot-kubernetes'
+        format: 'HTML, CSV'
+        failOnCVSS: '7.0'
+        reportsDirectory: '$(Build.SourcesDirectory)/ReportesSca'
+      displayName: Analisis SCA 
 
 - stage: ContainerSecurity 
   jobs:
