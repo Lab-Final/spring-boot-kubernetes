@@ -68,49 +68,14 @@ stages:
         format: 'HTML, CSV'
         failOnCVSS: '7.0'
         reportsDirectory: '$(Build.SourcesDirectory)/ReportesSca'
+    
+    - script: |
+        numeroAltas=$(grep ",HIGH," $(Build.SourcesDirectory)/dependency/dependency-check-report.csv | wc -l)
+        echo $numeroAltas "Vulnerabilidades encontradas"
+        if [ $numeroAltas -gt 0 ];
+        then 
+          echo "Se quiebra el pipeline por vulnerabilidades altas"
+          exit 1;
+        fi;
       displayName: Analisis SCA 
 
-- stage: ContainerSecurity 
-  jobs:
-  - job: Container_Security
-    steps:
-    - task: Maven@4
-      inputs:
-        mavenPomFile: 'pom.xml'
-        publishJUnitResults: true
-        testResultsFiles: '**/surefire-reports/TEST-*.xml'
-        javaHomeOption: 'JDKVersion'
-        mavenVersionOption: 'Default'
-        mavenAuthenticateFeed: false
-        effectivePomSkip: false
-        sonarQubeRunAnalysis: false
-    - task: DockerInstaller@0
-      inputs:
-        dockerVersion: '17.09.0-ce'
-        
-    - task: Docker@2
-      inputs:
-        containerRegistry: 'Docker-lab'
-        command: 'login'
-        
-    - task: Docker@2
-      inputs:
-        containerRegistry: 'Docker-lab'
-        repository: 'lytch000/spring-boot-kubernetes'
-        command: 'build'
-        Dockerfile: '**/Dockerfile'
-        tags: 'latest'
-        
-    - script: |
-            sudo apt-get install -y rpm
-            wget https://github.com/aquasecurity/trivy/releases/download/v0.27.1/trivy_0.27.1_Linux-64bit.deb
-            sudo dpkg -i trivy_0.27.1_Linux-64bit.deb
-            trivy image -s "HIGH" --exit-code 1 lytch000/spring-boot-kubernetes:latest
-      displayName: Image Scan
-    - task: Docker@2
-      inputs:
-        containerRegistry: 'Docker-lab'
-        repository: 'lytch000/spring-boot-kubernetes'
-        command: 'push'
-        tags: 'latest'
-      displayName: Docker Push
